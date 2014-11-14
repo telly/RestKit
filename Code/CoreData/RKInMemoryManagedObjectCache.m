@@ -156,6 +156,9 @@ static dispatch_queue_t RKInMemoryManagedObjectCacheCallbackQueue(void)
     
     NSMutableSet *objectsToAdd = [NSMutableSet setWithSet:insertedObjects];
     [objectsToAdd unionSet:updatedObjects];
+    [objectsToAdd unionSet:[self.entityCache.managedObjectContext insertedObjects]];
+    [objectsToAdd unionSet:[self.entityCache.managedObjectContext updatedObjects]];
+    [objectsToAdd unionSet:[self.entityCache.managedObjectContext.userInfo valueForKey:NSUpdatedObjectsKey]];
     
     [self.entityCache addObjects:objectsToAdd completion:nil];
     [self.entityCache removeObjects:deletedObjects completion:nil];
