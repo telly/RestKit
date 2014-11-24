@@ -148,20 +148,23 @@ static dispatch_queue_t RKInMemoryManagedObjectCacheCallbackQueue(void)
 - (void)handleManagedObjectContextDidChangeNotification:(NSNotification *)notification
 {
     // Observe the parent context for changes and update the caches
-    NSDictionary *userInfo = notification.userInfo;
-    NSSet *insertedObjects = [userInfo objectForKey:NSInsertedObjectsKey];
-    NSSet *updatedObjects = [userInfo objectForKey:NSUpdatedObjectsKey];
-    NSSet *deletedObjects = [userInfo objectForKey:NSDeletedObjectsKey];
-    RKLogTrace(@"insertedObjects=%@, updatedObjects=%@, deletedObjects=%@", insertedObjects, updatedObjects, deletedObjects);
-    
-    NSMutableSet *objectsToAdd = [NSMutableSet setWithSet:insertedObjects];
-    [objectsToAdd unionSet:updatedObjects];
-    [objectsToAdd unionSet:[self.entityCache.managedObjectContext insertedObjects]];
-    [objectsToAdd unionSet:[self.entityCache.managedObjectContext updatedObjects]];
-    [objectsToAdd unionSet:[self.entityCache.managedObjectContext.userInfo valueForKey:NSUpdatedObjectsKey]];
-    
-    [self.entityCache addObjects:objectsToAdd completion:nil];
-    [self.entityCache removeObjects:deletedObjects completion:nil];
+    NSManagedObjectContext *context = notification.object;
+    [context performBlockAndWait:^{
+        NSDictionary *userInfo = notification.userInfo;
+        NSSet *insertedObjects = [userInfo objectForKey:NSInsertedObjectsKey];
+        NSSet *updatedObjects = [userInfo objectForKey:NSUpdatedObjectsKey];
+        NSSet *deletedObjects = [userInfo objectForKey:NSDeletedObjectsKey];
+        RKLogTrace(@"insertedObjects=%@, updatedObjects=%@, deletedObjects=%@", insertedObjects, updatedObjects, deletedObjects);
+        
+        NSMutableSet *objectsToAdd = [NSMutableSet setWithSet:insertedObjects];
+        [objectsToAdd unionSet:updatedObjects];
+        [objectsToAdd unionSet:[context insertedObjects]];
+        [objectsToAdd unionSet:[context updatedObjects]];
+        [objectsToAdd unionSet:[context.userInfo valueForKey:NSUpdatedObjectsKey]];
+        
+        [self.entityCache addObjects:objectsToAdd completion:nil];
+        [self.entityCache removeObjects:deletedObjects completion:nil];
+    }];
 }
 
 @end
